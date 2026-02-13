@@ -22,8 +22,10 @@ export default function VideoDetails() {
       {/* Video Section */}
       <div className="lg:col-span-2">
         <video
-          src={video.videoFile?.url || video.videoFile}
+          src={typeof video.videoFile === 'string' ? video.videoFile : video.videoFile.url}
           controls
+          className="w-full h-auto rounded-lg shadow-lg"
+          autoPlay
         />
 
         <h1 className="text-xl font-bold mt-3">

@@ -1,3 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --bg-primary: #0f0f12;
+        --bg-secondary: #18181b;
+        --accent: #8b5cf6;
+        /* Violet-500 */
+        --accent-hover: #7c3aed;
+        /* Violet-600 */
+        --text-primary: #f3f4f6;
+        --text-secondary: #9ca3af;
+    }
+
+    body {
+        @apply bg-[#0f0f12] text-gray-100 font-['Outfit'];
+    }
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-violet-600 hover:bg-violet-700 text-white font-medium py-2 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-violet-500/25;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-full transition-all duration-300 border border-gray-700;
+    }
+
+    .input-field {
+        @apply w-full bg-[#18181b] border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors placeholder-gray-500;
+    }
+
+    .card {
+        @apply bg-[#18181b] rounded-2xl overflow-hidden shadow-xl border border-gray-800 transition-all duration-300 hover:border-gray-600 hover:shadow-2xl;
+    }
+
+    .nav-link {
+        @apply text-gray-400 hover:text-white transition-colors duration-200 font-medium relative;
+    }
+
+    .nav-link::after {
+        content: '';
+        @apply absolute -bottom-1 left-0 w-0 h-0.5 bg-violet-500 transition-all duration-300;
+    }
+
+    .nav-link:hover::after {
+        @apply w-full;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f0f12;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

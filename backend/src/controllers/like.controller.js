@@ -122,6 +122,28 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     }
 });
 
+const getVideoLikeStats = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid videoId");
+    }
+
+    const totalLikes = await Like.countDocuments({ video: videoId });
+    
+    let isLiked = false;
+    if (req.user) {
+        const like = await Like.findOne({ video: videoId, likedBy: req.user._id });
+        if (like) isLiked = true;
+    }
+
+    return res.status(200).json(new ApiResponse(
+        200,
+        { totalLikes, isLiked },
+        "Video likes fetched successfully"
+    ));
+});
+
 const getLikedVideos = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
 
@@ -129,13 +151,26 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         throw new ApiError(401, "User not authenticated");
     }
 
-    const likedVideos = await Like.find({ likedBy: userId })
-        .populate("video")  // assuming your Like schema has a `video` field that references Video model
-        .select("-__v -updatedAt"); // optional: clean output
+    const likedVideos = await Like.find({ 
+        likedBy: userId,
+        video: { $exists: true, $ne: null } 
+    }).populate({
+        path: "video",
+        populate: {
+            path: "owner",
+            select: "username avatar"
+        }
+    });
+
+    const videos = likedVideos
+        .map(like => like.video)
+        .filter(video => video !== null); // safety check
 
     return res.status(200).json(new ApiResponse(
         200,
-        { videos: likedVideos.map(like => like.video) }, // extract only video info
+        videos, // Return array directly to match other endpoints usually, or wrap in object? getAllVideos returns { videos: [] } usually.
+        // Wait, getAllVideos returns { videos: [...], total: ... }
+        // Let's stick to returning the array of videos as `data`.
         "Liked videos fetched successfully"
     ));
 });
@@ -144,5 +179,6 @@ export{
     toggleVideoLike,
     toggleCommentLike,
     toggleTweetLike,
-    getLikedVideos
+    getLikedVideos,
+    getVideoLikeStats
 }

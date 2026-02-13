@@ -66,38 +66,49 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
-    // TODO: get video, upload to cloudinary, create video
-
-    if(!title){
-        throw new ApiError(400,"Title is required")
-    }
-    if(!description){
-        throw new ApiError(400,"description is required")
+    
+    if([title, description].some((field) => field?.trim() === "")) {
+        throw new ApiError(400, "All fields are required")
     }
 
-    const videoLocalPath = req.files?.video?.[0]?.path
-    if(!videoLocalPath){
-        throw new ApiError(400,"Video is required")
+    const videoFileLocalPath = req.files?.videoFile?.[0]?.path;
+    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
+
+    if (!videoFileLocalPath) {
+        throw new ApiError(400, "Video file is required");
     }
-    const video = await uploadOnCloudinary(videoLocalPath)
-
-    if(!video|| !video.url){
-        throw new ApiError(500,"video uploading failed")
+    if (!thumbnailLocalPath) {
+        throw new ApiError(400, "Thumbnail file is required");
     }
 
+    const videoUpload = await uploadOnCloudinary(videoFileLocalPath);
+    const thumbnailUpload = await uploadOnCloudinary(thumbnailLocalPath);
 
-    return res.status(200)
-    .json( new ApiResponse(
-        200,{
-            video:video.url,
+    if (!videoUpload) {
+        throw new ApiError(500, "Video upload failed");
+    }
+    if (!thumbnailUpload) {
+        throw new ApiError(500, "Thumbnail upload failed");
+    }
+
+    try {
+        const video = await Video.create({
+            videoFile: videoUpload.url,
+            thumbnail: thumbnailUpload.url,
             title,
-            description
-        },
-        "Video uploading successfully"
-    ))
+            description,
+            duration: videoUpload.duration || 0, // Fallback if duration is missing
+            owner: req.user._id,
+            isPublished: true
+        });
 
-    
-    
+        return res.status(201).json(
+            new ApiResponse(201, video, "Video published successfully")
+        );
+    } catch (error) {
+        console.error("Error creating video in DB:", error);
+        throw new ApiError(500, "Database creation failed: " + error.message);
+    }
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -107,7 +118,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(400,"VideoId is not present")
     }
 
-    const video = await Video.findById(videoId)
+    const video = await Video.findById(videoId).populate("owner", "username avatar");
     if(!video){
         throw new ApiError(404,"Video is not present")
     }
@@ -173,7 +184,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
         }
 
         // ✅ Ownership check (after we know video exists)
-        if (video.user.toString() !== req.user._id.toString()) {
+        if (video.owner.toString() !== req.user._id.toString()) {
             throw new ApiError(403, "You are not authorized to delete this video");
         }
 

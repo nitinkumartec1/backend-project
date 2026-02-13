@@ -5,19 +5,29 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       getCurrentUser()
         .then(res => setUser(res.data.data))
-        .catch(() => localStorage.removeItem("token"));
+        .catch(() => localStorage.removeItem("token"))
+        .finally(() => setLoading(false));
+    } else {
+        setLoading(false);
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
-      {children}
+    <AuthContext.Provider value={{ user, setUser, loading }}>
+      {loading ? (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+          Loading...
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };
